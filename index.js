@@ -117,7 +117,7 @@ var tryHttp = function (protocol, reqOptions, callback) {
 	});
 
 	req.on('error', function (err) {
-		// callback(err);
+		callback(err);
 	});
 
 	req.setTimeout(reqOptions.timeout, function () {
