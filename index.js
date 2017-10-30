@@ -45,6 +45,14 @@ var maxListenersAdd = function (emitter, number) {
 	return emitter.setMaxListeners(emitter.getMaxListeners() + number);
 };
 
+var doCallBack = function (reqOptions, callback) {
+	if (!reqOptions.canBeCallBacked) {
+		return;
+	}
+	reqOptions.canBeCallBacked = false;
+	callback();
+};
+
 var tryHttp = function (protocol, reqOptions, callback) {
 
 	if (typeof reqOptions.data == 'object' && reqOptions.headers['Content-Type'] != 'application/octet-stream') {
@@ -108,21 +116,29 @@ var tryHttp = function (protocol, reqOptions, callback) {
 		});
 		res.on('end', function () {
 			if (res.statusCode >= 400) {
-				callback(`REQUEST GET CODE ${res.statusCode}`);
+				doCallBack(reqOptions, function () {
+					callback(`REQUEST GET CODE ${res.statusCode}`);
+				});
 				req.abort();
 				return;
 			}
-			callback(err, resDataParse(resData));
+			doCallBack(reqOptions, function () {
+				callback(err, resDataParse(resData));
+			});
 		})
 	});
 
 	req.on('error', function (err) {
-		callback(err);
+		doCallBack(reqOptions, function () {
+			callback(err);
+		});
 	});
 
 	req.setTimeout(reqOptions.timeout, function () {
 		console.log(`${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`);
-		callback(`${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`);
+		doCallBack(reqOptions, function () {
+			callback(`${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`);
+		});
 		req.abort();
 	});
 
@@ -163,7 +179,7 @@ var reqHttp = function (options, callback) {
 		reqOptions.hasQuery = true;
 	}
 	if (urlParse.protocol == null) {
-		callback('url is null');
+		callback('protocol is null');
 		return;
 	}
 	if (urlParse.protocol == 'http:') {
