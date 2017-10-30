@@ -1,6 +1,6 @@
 {
   "name": "request_http",
-  "version": "1.0.50",
+  "version": "1.0.55",
   "description": "request_http",
   "main": "index.js",
   "scripts": {

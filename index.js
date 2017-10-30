@@ -172,7 +172,8 @@ var reqHttp = function (options, callback) {
 		headers: options.headers,
 		data: options.data,
 		timeout: options.timeout,
-		hasQuery: false
+		hasQuery: false,
+		canBeCallBacked: true
 	};
 
 	if (urlParse.query != null) {
