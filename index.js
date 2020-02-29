@@ -123,7 +123,7 @@ var tryHttp = function (protocol, reqOptions, callback) {
 				return;
 			}
 			doCallBack(reqOptions, function () {
-				callback(err, resDataParse(resData));
+				callback(err, resDataParse(resData), res.headers);
 			});
 		})
 	});

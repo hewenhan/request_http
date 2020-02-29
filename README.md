@@ -17,10 +17,11 @@ var options = {
 	}
 };
 
-reqHttp(options, function (err, json) {
+reqHttp(options, function (err, json, headers) {
 	if (err) {
 		console.log(err);
 	}
+	console.log(headers);
 	console.log(json);
 });
 ```
