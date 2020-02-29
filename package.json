@@ -1,6 +1,6 @@
 {
   "name": "request_http",
-  "version": "1.0.55",
+  "version": "1.1.55",
   "description": "request_http",
   "main": "index.js",
   "scripts": {
@@ -18,6 +18,6 @@
   "homepage": "https://github.com/hewenhan/request_http#readme",
   "dependencies": {
     "pixl-xml": "^1.0.13",
-    "qs": "^6.5.1"
+    "qs": "^6.9.1"
   }
 }
