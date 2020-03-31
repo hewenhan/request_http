@@ -6,7 +6,7 @@ var reqHttp = require("request_http");
 
 var options = {
 	method: 'get', // default 'get'
-	url: 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential',
+	url: 'https://www.google.com',
 	port: 443,	// if http default 80, if https default 443
 	headers: {
 		'Content-Type': 'text/xml'	// default 'application/x-www-form-urlencoded'
@@ -17,11 +17,11 @@ var options = {
 	}
 };
 
-reqHttp(options, function (err, json, headers) {
+reqHttp(options, function (err, json, resHeaders) {
 	if (err) {
 		console.log(err);
 	}
-	console.log(headers);
+	console.log(resHeaders);
 	console.log(json);
 });
 ```
