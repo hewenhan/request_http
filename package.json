@@ -1,7 +1,7 @@
 {
   "name": "request_http",
   "version": "2.3.1",
-  "description": "request_http",
+  "description": "The simplified and powerful HTTP request client Powered by Blind Holmes.",
   "keywords": ["request", "http", "curl", "https"],
   "main": "src/index.js",
   "scripts": {

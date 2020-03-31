@@ -1,5 +1,11 @@
 # request_http
 
+## DESCRIPTION
+`version`: `v2.3.1`
+`author`: `Blind Holmes`
+
+This is a simplified and powerful and Human-friendly HTTP request client.
+
 ## useAge:
 ```
 var reqHttp = require("request_http");
