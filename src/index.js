@@ -41,16 +41,15 @@ var resDataParse = function (resData) {
 	return JSON.parse(resData);
 };
 
-var maxListenersAdd = function (emitter, number) {
-	return emitter.setMaxListeners(emitter.getMaxListeners() + number);
+var lineParse = function (context) {
+	var result = context.replace(/\r\n/g, '\n');
+	result = result.replace(/\r/g, '\n');
+
+	return result.split('\n');
 };
 
-var doCallBack = function (reqOptions, callback) {
-	if (!reqOptions.canBeCallBacked) {
-		return;
-	}
-	reqOptions.canBeCallBacked = false;
-	callback();
+var maxListenersAdd = function (emitter, number) {
+	return emitter.setMaxListeners(emitter.getMaxListeners() + number);
 };
 
 var tryHttp = function (protocol, reqOptions, callback) {
@@ -61,15 +60,10 @@ var tryHttp = function (protocol, reqOptions, callback) {
 		var dataStr = reqOptions.data;
 	}
 
-	if (reqOptions.method == null) {
-		reqOptions.method = '';
-	}
-	if (reqOptions.timeout == null) {
-		reqOptions.timeout = 60000;
-	}
-
 	switch (reqOptions.method.toLowerCase()) {
+
 		case 'get':
+
 		var concatStr = '?';
 		if (reqOptions.hasQuery) {
 			concatStr = '&';
@@ -80,25 +74,26 @@ var tryHttp = function (protocol, reqOptions, callback) {
 		reqOptions.method = 'GET';
 		break;
 		case 'post':
+
 		reqOptions.method = 'POST';
 		if (reqOptions.headers['Content-Type'] == 'application/json') {
 			dataStr = JSON.stringify(reqOptions.data);
 		}
 		break;
+
 		default:
-		var concatStr = '?';
-		if (reqOptions.hasQuery) {
-			concatStr = '&';
-		}
-		if (dataStr != null) {
-			reqOptions.path += concatStr + dataStr;
-		}
-		reqOptions.method = 'GET';
+		break;
 	}
 
 
 	var json;
 	var resData = '';
+	var resObj = {
+		data: '',
+		ended: false
+	};
+
+	var linesSurplus = '';
 	var err;
 
 	// console.log(reqOptions);
@@ -108,41 +103,53 @@ var tryHttp = function (protocol, reqOptions, callback) {
 			res.setEncoding('utf8');
 		}
 		res.on('data', function (chunk) {
-			if (resData == "") {
-				resData = chunk;
+			if (reqOptions.chunkMode) {
+				resObj.data = chunk;
+				callback(err, resObj, res.headers);
+				resObj.data = '';
+				return;
+			}
+			if (reqOptions.lineMode) {
+				lineParseArr = lineParse(linesSurplus + chunk);
+				for (var i = 0; i < lineParseArr.length - 1; i++) {
+					resObj.data = lineParseArr[i];
+					callback(err, resObj, res.headers);
+					resObj.data = '';
+				}
+				linesSurplus = lineParseArr[lineParseArr.length - 1];
 				return;
 			}
 			resData += chunk;
 		});
 		res.on('end', function () {
+			resObj.ended = true;
 			if (res.statusCode >= 400) {
-				doCallBack(reqOptions, function () {
-					callback(`REQUEST GET CODE ${res.statusCode}`);
-				});
+				err = `REQUEST GET CODE ${res.statusCode}`;
 				req.abort();
+			}
+			if (reqOptions.chunkMode) {
+				callback(err, resObj, res.headers);
 				return;
 			}
-			doCallBack(reqOptions, function () {
-				callback(err, resDataParse(resData), res.headers);
-			});
+			if (reqOptions.lineMode) {
+				resObj.data = linesSurplus;
+				callback(err, resObj, res.headers);
+				return;
+			}
+			callback(err, resDataParse(resData), res.headers);
 		})
 	});
 
 	req.on('error', function (err) {
-		doCallBack(reqOptions, function () {
-			callback(err);
-		});
+		callback(err);
 	});
 
 	req.setTimeout(reqOptions.timeout, function () {
-		console.log(`${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`);
-		doCallBack(reqOptions, function () {
-			callback(`${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`);
-		});
+		callback(`${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`);
 		req.abort();
 	});
 
-	if (reqOptions.method.toLowerCase() == 'post') {
+	if (reqOptions.method.toLowerCase() == 'post' && dataStr != null) {
 		// write post data to request body
 		req.write(dataStr);
 	}
@@ -168,12 +175,13 @@ var reqHttp = function (options, callback) {
 	var reqOptions = {
 		hostname: urlParse.hostname,
 		path: urlParse.path,
-		method: options.method,
+		method: options.method || 'get',
 		headers: options.headers,
 		data: options.data,
-		timeout: options.timeout,
+		timeout: options.timeout || 60000,
 		hasQuery: false,
-		canBeCallBacked: true
+		chunkMode: options.chunkMode || false,
+		lineMode: options.lineMode || false
 	};
 
 	if (urlParse.query != null) {
