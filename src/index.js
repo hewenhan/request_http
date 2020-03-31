@@ -48,44 +48,7 @@ var lineParse = function (context) {
 	return result.split('\n');
 };
 
-var maxListenersAdd = function (emitter, number) {
-	return emitter.setMaxListeners(emitter.getMaxListeners() + number);
-};
-
-var tryHttp = function (protocol, reqOptions, callback) {
-
-	if (typeof reqOptions.data == 'object' && reqOptions.headers['Content-Type'] != 'application/octet-stream') {
-		var dataStr = querystring.stringify(reqOptions.data);
-	} else {
-		var dataStr = reqOptions.data;
-	}
-
-	switch (reqOptions.method.toLowerCase()) {
-
-		case 'get':
-
-		var concatStr = '?';
-		if (reqOptions.hasQuery) {
-			concatStr = '&';
-		}
-		if (dataStr != null) {
-			reqOptions.path += concatStr + dataStr;
-		}
-		reqOptions.method = 'GET';
-		break;
-		case 'post':
-
-		reqOptions.method = 'POST';
-		if (reqOptions.headers['Content-Type'] == 'application/json') {
-			dataStr = JSON.stringify(reqOptions.data);
-		}
-		break;
-
-		default:
-		break;
-	}
-
-
+var requestFn = function (protocol, reqOptions, callback, sendData) {
 	var json;
 	var resData = '';
 	var resObj = {
@@ -95,8 +58,6 @@ var tryHttp = function (protocol, reqOptions, callback) {
 
 	var linesSurplus = '';
 	var err;
-
-	// console.log(reqOptions);
 
 	var req = protocol.request(reqOptions, function (res) {
 		if (reqOptions.headers['Content-Type'] != 'application/octet-stream') {
@@ -137,7 +98,7 @@ var tryHttp = function (protocol, reqOptions, callback) {
 				return;
 			}
 			callback(err, resDataParse(resData), res.headers);
-		})
+		});
 	});
 
 	req.on('error', function (err) {
@@ -145,33 +106,69 @@ var tryHttp = function (protocol, reqOptions, callback) {
 	});
 
 	req.setTimeout(reqOptions.timeout, function () {
-		callback(`${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`);
+		var err = `${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`;	
 		req.abort();
+		callback(err);
 	});
 
-	if (reqOptions.method.toLowerCase() == 'post' && dataStr != null) {
+	if (reqOptions.method.toLowerCase() == 'post' && sendData != null) {
 		// write post data to request body
-		req.write(dataStr);
+		req.write(sendData);
 	}
 
 	req.end();
 };
 
-var reqHttp = function (options, callback) {
-	if (callback == null) {
-		callback = function () {};
+var tryHttp = function (protocol, reqOptions, callback) {
+
+	if (typeof reqOptions.data == 'object' && reqOptions.headers['Content-Type'] != 'application/octet-stream') {
+		var sendData = querystring.stringify(reqOptions.data);
+	} else {
+		var sendData = reqOptions.data;
 	}
+
+	switch (reqOptions.method.toLowerCase()) {
+
+		case 'get':
+
+		var concatStr = '?';
+		if (reqOptions.hasQuery) {
+			concatStr = '&';
+		}
+		if (sendData != null) {
+			reqOptions.path += concatStr + sendData;
+		}
+		reqOptions.method = 'GET';
+		break;
+		case 'post':
+
+		reqOptions.method = 'POST';
+		if (reqOptions.headers['Content-Type'] == 'application/json') {
+			sendData = JSON.stringify(reqOptions.data);
+		}
+		break;
+
+		default:
+		break;
+	}
+
+	requestFn(protocol, reqOptions, callback, sendData);
+};
+
+var reqHttp = function (options, callback) {
+
+	callback = callback || function () {};
+	options.headers = options.headers || {};
+	options.headers['Content-Type'] = options.headers['Content-Type'] || 'application/x-www-form-urlencoded';
+
+
 	if (options.url == null) {
 		callback('url is null');
 		return;
 	}
+
 	var urlParse = url.parse(options.url);
-	if (options.headers == null) {
-		options.headers = {};
-	}
-	if (options.headers['Content-Type'] == null) {
-		options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-	}
+
 	var reqOptions = {
 		hostname: urlParse.hostname,
 		path: urlParse.path,
@@ -192,11 +189,11 @@ var reqHttp = function (options, callback) {
 		return;
 	}
 	if (urlParse.protocol == 'http:') {
-		reqOptions.port = options.port == null ? 80 : options.port;
+		reqOptions.port = options.port || 80;
 		protocol = http;
 	}
 	if (urlParse.protocol == 'https:') {
-		reqOptions.port = options.port == null ? 443 : options.port;
+		reqOptions.port = options.port || 443;
 		protocol = https;
 	}
 	if (urlParse.port != null) {
