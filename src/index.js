@@ -101,14 +101,16 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 		});
 	});
 
+	req.abortReason = '';
+
 	req.on('error', function (err) {
+		err.info = req.abortReason;
 		callback(err);
 	});
 
-	req.setTimeout(reqOptions.timeout, function () {
-		var err = `${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`;	
+	req.on('timeout', function (err) {
+		req.abortReason = `${new Date()}: REQUEST_TIMEOUT ${reqOptions.hostname} ${reqOptions.method} ${reqOptions.path}`;
 		req.abort();
-		callback(err);
 	});
 
 	if (reqOptions.method.toLowerCase() == 'post' && sendData != null) {

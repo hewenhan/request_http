@@ -2,7 +2,8 @@ var reqHttp = require('../src/index.js');
 
 // GET TEST
 var options = {
-	url: 'https://www.google.com'
+	url: 'https://www.google.com',
+	timeout: 5000
 };
 
 reqHttp(options, function (err, resBody, resHeaders) {
