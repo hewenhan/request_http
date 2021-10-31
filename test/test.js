@@ -6,7 +6,7 @@ var options = {
 	timeout: 5000
 };
 
-reqHttp(options, function (err, resBody, resHeaders) {
+reqHttp(options, function (err, resBody, resHeaders, resCode) {
 	if (err) {
 		console.log(err);
 		return;
@@ -21,7 +21,7 @@ var options = {
 	url: 'https://www.google.com'
 };
 
-reqHttp(options, function (err, resBody, resHeaders) {
+reqHttp(options, function (err, resBody, resHeaders, resCode) {
 	if (err) {
 		console.log(err);
 		return;
@@ -40,7 +40,7 @@ var options = {
 	}
 };
 
-reqHttp(options, function (err, resBody, resHeaders) {
+reqHttp(options, function (err, resBody, resHeaders, resCode) {
 	if (err) {
 		console.log(err);
 		return;
@@ -56,7 +56,7 @@ var options = {
 };
 
 var firstChunk = true;
-reqHttp(options, function (err, chunkObj, resHeaders) {
+reqHttp(options, function (err, chunkObj, resHeaders, resCode) {
 	if (err) {
 		console.log(err);
 		return;
@@ -78,7 +78,7 @@ var options = {
 };
 
 var firstLine = true;
-reqHttp(options, function (err, lineObj, resHeaders) {
+reqHttp(options, function (err, lineObj, resHeaders, resCode) {
 	if (err) {
 		console.log(err);
 		return;

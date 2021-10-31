@@ -97,7 +97,7 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 				callback(err, resObj, res.headers);
 				return;
 			}
-			callback(err, resDataParse(resData), res.headers);
+			callback(err, resDataParse(resData), res.headers, res.statusCode);
 		});
 	});
 
