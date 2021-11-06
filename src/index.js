@@ -21,11 +21,12 @@
 // 	console.log(json);
 // });
 
-var querystring = require('qs');
-var https = require('https');
-var http = require('http');
-var url = require('url');
-var piXml = require('pixl-xml');
+const querystring = require('qs');
+const https       = require('https');
+const http        = require('http');
+const url         = require('url');
+const piXml       = require('pixl-xml');
+const zlib        = require('zlib');
 
 var resDataParse = function (resData) {
 	try {
@@ -60,9 +61,23 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 	var err;
 
 	var req = protocol.request(reqOptions, function (res) {
-		if (reqOptions.headers['Content-Type'] != 'application/octet-stream') {
-			res.setEncoding('utf8');
+		if (res.headers['content-encoding'] == 'gzip') {
+			var buffer = [];
+			var gunzip = zlib.createGunzip();
+
+			gunzip.on('data', function(data) {
+				buffer.push(data.toString())
+			}).on("end", function() {
+				callback(err, buffer.join(""), res.headers, res.statusCode);
+
+			}).on("error", function(e) {
+				callback(e);
+			});
+
+			res.pipe(gunzip);
+			return;
 		}
+
 		res.on('data', function (chunk) {
 			if (reqOptions.chunkMode) {
 				resObj.data = chunk;
