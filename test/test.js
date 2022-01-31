@@ -94,12 +94,13 @@ reqHttp(options, function (err, lineObj, resHeaders, resCode) {
 });
 
 var options = {
-	url: 'http://xima.tv/1_3woiHu',
+	url: 'https://aweme.snssdk.com/aweme/v1/playwm/?video_id=v0200fg10000c7okggrc77uahmjtmce0&ratio=720p&line=0',
 	timeout: 5000,
 	redirectChain: true,
 	headers: {
 		'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36'
-	}
+	},
+	headersOnly: true
 };
 
 reqHttp(options, function (err, resBody, resHeaders, resCode) {

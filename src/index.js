@@ -156,7 +156,11 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 			return;
 		}
 
-		res.headers.lastReqOptions = reqOptions;
+		res.headers.lastReqHeaders = reqOptions.urlParse;
+		if (reqOptions.headersOnly) {
+			callback(err, null, res.headers, res.statusCode);
+			return;
+		}
 
 		res.on('data', function (chunk) {
 			if (reqOptions.chunkMode) {
@@ -279,7 +283,8 @@ var reqHttp = function (options, callback) {
 		urlParse: urlParse,
 		redirectChain: options.redirectChain || false,
 		redirectChainLimit: options.redirectChainLimit || 10,
-		redirectChainCount: options.redirectChainCount || 0
+		redirectChainCount: options.redirectChainCount || 0,
+		headersOnly: options.headersOnly || false
 	};
 
 	if (urlParse.query != null) {
