@@ -156,7 +156,7 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 			return;
 		}
 
-		res.headers.lastReqHeaders = reqOptions.urlParse;
+		res.headers.lastReqOptions = reqOptions;
 		if (reqOptions.headersOnly) {
 			callback(err, null, res.headers, res.statusCode);
 			return;
