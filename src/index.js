@@ -156,7 +156,7 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 			return;
 		}
 
-		res.headers.lastUrlParse = reqOptions.urlParse;
+		res.headers.lastReqOptions = reqOptions;
 
 		res.on('data', function (chunk) {
 			if (reqOptions.chunkMode) {
