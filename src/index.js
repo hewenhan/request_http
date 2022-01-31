@@ -156,6 +156,8 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 			return;
 		}
 
+		res.headers.lastUrlParse = reqOptions.reqOptions.urlParse;
+
 		res.on('data', function (chunk) {
 			if (reqOptions.chunkMode) {
 				resObj.data = chunk;
