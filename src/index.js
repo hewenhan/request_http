@@ -27,6 +27,10 @@ const http        = require('http');
 const url         = require('url');
 const piXml       = require('pixl-xml');
 const zlib        = require('zlib');
+const tough       = require('tough-cookie');
+
+var Cookie    = tough.Cookie;
+var cookiejar = new tough.CookieJar();
 
 var resDataParse = function (resData) {
 	try {
@@ -49,6 +53,79 @@ var lineParse = function (context) {
 	return result.split('\n');
 };
 
+var redirectNext = function (protocol, reqOptions, callback, sendData, res) {
+	if (!reqOptions.redirectChain) {
+		return false;
+	}
+	if (res.statusCode != 301 && res.statusCode != 302 && res.statusCode != 303) {
+		return false;
+	}
+	if (res.headers.location[0] == '/') {
+		res.headers.location = `${reqOptions.urlParse.protocol}//${reqOptions.urlParse.host}${res.headers.location}`
+	}
+	var urlParse = url.parse(res.headers.location);
+	reqOptions.urlParse = urlParse;
+	reqOptions.hostname = urlParse.hostname;
+	reqOptions.path     = urlParse.path;
+
+	if (urlParse.protocol == 'http:') {
+		reqOptions.port = urlParse.port || 80;
+		protocol = http;
+	}
+	if (urlParse.protocol == 'https:') {
+		reqOptions.port = urlParse.port || 443;
+		protocol = https;
+	}
+
+	reqOptions.redirectChainCount++;
+
+	if (reqOptions.redirectChainCount == reqOptions.redirectChainLimit) {
+		console.error('Surpass redirectChainLimit');
+		requestFn(protocol, reqOptions, callback, sendData);
+		return false;
+	}
+	requestFn(protocol, reqOptions, callback, sendData);
+	return true;
+};
+
+var gzipParse = function (res, callback) {
+	if (res.headers['content-encoding'] != 'gzip') {
+		return false;
+	}
+
+	var buffer = [];
+	var gunzip = zlib.createGunzip();
+
+	gunzip.on('data', function(data) {
+		buffer.push(data.toString())
+	}).on("end", function() {
+		callback(null, buffer.join(""), res.headers, res.statusCode);
+
+	}).on("error", function(e) {
+		callback(e);
+	});
+
+	res.pipe(gunzip);
+	return true;
+};
+
+var setHeaders = function (reqOptions, res) {
+	if (!reqOptions.redirectChain) {
+		return;
+	}
+	if (!res.headers['set-cookie']) {
+		return;
+	}
+	if (res.headers['set-cookie'] instanceof Array)
+		var cookies = res.headers['set-cookie'].map(Cookie.parse);
+	else
+		var cookies = [Cookie.parse(res.headers['set-cookie'])];
+	cookies.forEach(cookie => {
+		var cookieJson = cookie.toJSON();
+		cookiejar.setCookieSync(cookie, `http://${cookieJson.domain}`);
+	});
+};
+
 var requestFn = function (protocol, reqOptions, callback, sendData) {
 	var json;
 	var resData = '';
@@ -60,21 +137,22 @@ var requestFn = function (protocol, reqOptions, callback, sendData) {
 	var linesSurplus = '';
 	var err;
 
+	var currentCookie = cookiejar.getCookiesSync(`http://${reqOptions.hostname}`);
+	if (currentCookie.length != 0) {
+		reqOptions.headers.Cookie = '';
+		currentCookie.forEach(cookie => {
+			var cookieJson = cookie.toJSON();
+			reqOptions.headers.Cookie += `${cookieJson.key}=${cookieJson.value}; `
+		});
+	}
 	var req = protocol.request(reqOptions, function (res) {
-		if (res.headers['content-encoding'] == 'gzip') {
-			var buffer = [];
-			var gunzip = zlib.createGunzip();
+		setHeaders(reqOptions, res);
 
-			gunzip.on('data', function(data) {
-				buffer.push(data.toString())
-			}).on("end", function() {
-				callback(err, buffer.join(""), res.headers, res.statusCode);
+		if (redirectNext(protocol, reqOptions, callback, sendData, res)) {
+			return;
+		}
 
-			}).on("error", function(e) {
-				callback(e);
-			});
-
-			res.pipe(gunzip);
+		if (gzipParse(res, callback)) {
 			return;
 		}
 
@@ -195,7 +273,11 @@ var reqHttp = function (options, callback) {
 		timeout: options.timeout || 60000,
 		hasQuery: false,
 		chunkMode: options.chunkMode || false,
-		lineMode: options.lineMode || false
+		lineMode: options.lineMode || false,
+		urlParse: urlParse,
+		redirectChain: options.redirectChain || false,
+		redirectChainLimit: options.redirectChainLimit || 10,
+		redirectChainCount: options.redirectChainCount || 0
 	};
 
 	if (urlParse.query != null) {
@@ -216,6 +298,7 @@ var reqHttp = function (options, callback) {
 	if (urlParse.port != null) {
 		reqOptions.port = urlParse.port;
 	}
+
 	tryHttp(protocol, reqOptions, callback);
 };
 
