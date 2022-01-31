@@ -1,6 +1,6 @@
 {
   "name": "request_http",
-  "version": "2.9.6",
+  "version": "2.9.7",
   "description": "The simplified and powerful HTTP request client Powered by Blind Holmes.",
   "keywords": [
     "request",

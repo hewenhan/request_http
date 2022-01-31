@@ -1,7 +1,7 @@
 # request_http
 
 ## DESCRIPTION
-`version`: `v2.9.6`
+`version`: `v2.9.7`
 `author`: `Blind Holmes`
 
 This is a simplified and powerful and Human-friendly HTTP request client.
